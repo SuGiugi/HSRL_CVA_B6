@@ -59,6 +59,7 @@ void loop() {
     MiniR4.M1.setSpeed(0);
     MiniR4.M2.setSpeed(0);
     delay(500);
+    delay(500);
   }
   
   
