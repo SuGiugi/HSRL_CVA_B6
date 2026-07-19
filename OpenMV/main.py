@@ -1,63 +1,87 @@
-import sensor, image, time  # Import image sensor and time modules
-from matrix_mini import send_data  # Import the send_data function from the matrix_mini module
+import sensor, image, time
+from matrix_mini import send_data, uart, green_led
+import fill_light
 
-# Initialize the sensor
-sensor.reset()  # Reset the sensor
-sensor.set_pixformat(sensor.RGB565)  # Set the pixel format to RGB565
-sensor.set_framesize(sensor.QVGA)  # Set the image resolution to QVGA (320x240)
+# Khởi tạo cảm biến
+sensor.reset()
+sensor.set_pixformat(sensor.RGB565)
+sensor.set_framesize(sensor.QVGA)
+sensor.skip_frames(time=2000)
 
-# Khởi động camera và đợi cảm biến ổn định phơi sáng
-sensor.skip_frames(time=2000)  # Wait for 2 seconds to stabilize the sensor
-# -------------------------------------------------------------------
+sensor.set_vflip(True)
+sensor.set_hmirror(True)
 
-# Set image flipping
-sensor.set_vflip(True)  # Vertically flip the image
-sensor.set_hmirror(True)  # Horizontally mirror the image
+fill_light.on()
 
-# Define color threshold range (LAB/HSV), suitable for detecting the target color
-threshold_obj = [(47, 33, -11, -128, 127, -120)]  # Red # Green
-clock = time.clock()  # Create a clock to calculate frames per second (FPS) of image processing
+threshold_obj = [(37, 18, -128, -15, 127, -128), (19, 9, 19, 127, -128, 67), (36, 5, 28, 127, -128, 31)]
+clock = time.clock()
 nearest_data = (-1, 0, 0, 0)
-
-
 def finding(color_id):
     global nearest_data
-    blobs = img.find_blobs([threshold_obj[color_id]], pixels_threshold=500, area_threshold=200)
+    if color_id == 2:
+        blobs = img.find_blobs([threshold_obj[color_id]], pixels_threshold=700, area_threshold=200)
+    else:
+        blobs = img.find_blobs([threshold_obj[color_id]], pixels_threshold=600, area_threshold=200)
     if color_id == 2:
         color_id = 1
-    if blobs:  # If blobs are found
-
-        # --- SỬA TÌM BLOB: Chọn khối có y_center (cy) lớn nhất ---
-        # cy() càng lớn nghĩa là khối đó càng nằm dịch về phía dưới màn hình
+    if blobs:
         max_blob = max(blobs, key=lambda b: b.cy())
-        # ---------------------------------------------------------
-
-        img.draw_rectangle(max_blob.rect())  # Draw a rectangle around the largest blob
-
-        # Calculate the center coordinates of the blob
+        img.draw_rectangle(max_blob.rect())
         x_center = max_blob.cx()
         y_center = max_blob.cy()
-
-        # Calculate the blob's area and round it to an integer
         blob_area = round(max_blob.area() / 2)
 
-        # Send the center coordinates and area to an external system
         if nearest_data[2] <= y_center:
             nearest_data = (color_id, x_center, y_center, blob_area)
 
-        # Mark the center point and coordinates text on the image
-        img.draw_cross(x_center, y_center)  # Draw a cross at the center
-        img.draw_string(max_blob.x(), max_blob.y() - 15, f"X:{x_center}, Y:{y_center}", color=(255, 255, 255))  # Display the coordinates
+        img.draw_cross(x_center, y_center)
+        img.draw_string(max_blob.x(), max_blob.y() - 15, f"X:{x_center}, Y:{y_center}", color=(255, 255, 255))
+
+
+# while True:
+#     fill_light.brightness(100)
+#     # Kiểm tra xem robot có gửi lệnh yêu cầu lấy dữ liệu không
+#     clock.tick()
+
+#     # CHỤP ẢNH NGAY TẠI THỜI ĐIỂM ROBOT YÊU CẦU
+#     img = sensor.snapshot()
+
+#     nearest_data = (-1, 0, 0, 0)
+#     finding(0)
+#     finding(1)
+#     finding(2)
+#     # finding(3)
+
+#     # Gửi dữ liệu mới nhất về ngay lập tức
+#     if nearest_data != (-1, 0, 0, 0):
+#         send_data([nearest_data[0], nearest_data[1], nearest_data[2], nearest_data[3]])
+#     else:
+#         # Nếu không thấy vật thể, gửi gói dữ liệu trống để robot không bị đợi timeout
+#         send_data([255, 0, 0, 0])
+#     # Thêm delay nhỏ để giảm tải cho CPU camera khi đứng đợi lệnh
 
 
 while True:
-    clock.tick()  # Start timing
-    img = sensor.snapshot()  # Capture an image
-    nearest_data = (-1, 0, 0, 0)
-    # Find blobs (color regions) in the image that match the threshold
-    finding(0)
-    # finding(1)
-    # finding(2)
-    if nearest_data != (-1, 0, 0, 0):
-        print(nearest_data)
-        send_data([nearest_data[0], nearest_data[1], nearest_data[2], nearest_data[3]])
+    fill_light.brightness(100)
+    # Kiểm tra xem robot có gửi lệnh yêu cầu lấy dữ liệu không
+    if uart.any():
+        cmd = uart.read(1) # Đọc 1 byte lệnh từ robot
+        if cmd == b'G': # Nếu robot gửi đúng ký tự 'G'
+            clock.tick()
+
+            # CHỤP ẢNH NGAY TẠI THỜI ĐIỂM ROBOT YÊU CẦU
+            img = sensor.snapshot()
+
+            nearest_data = (-1, 0, 0, 0)
+            finding(0)
+            finding(1)
+            finding(2)
+            # finding(3)
+            # Gửi dữ liệu mới nhất về ngay lập tức
+            if nearest_data != (-1, 0, 0, 0):
+                send_data([nearest_data[0], nearest_data[1], nearest_data[2], nearest_data[3]])
+            else:
+                # Nếu không thấy vật thể, gửi gói dữ liệu trống để robot không bị đợi timeout
+                send_data([255, 0, 0, 0])
+        if cmd == b'L':
+            green_led.on()

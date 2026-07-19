@@ -8,22 +8,10 @@ is_enabled = False
 green_led = LED(2)
 green_led.on()
 
-def enable_if_start_received():
-    global is_enabled
-    if uart.any() >= 5:
-        start_signal = uart.read(5)
-        if start_signal == b'start':
-            is_enabled = True
-            green_led.off()
-            uart1 = UART(3, 115200)
 
 def send_data(send_buffer):
-    global is_enabled
-
-    # 首次检查是否收到 'start' 指令
-    if not is_enabled:
-        enable_if_start_received()
-        return
+    green_led.off()
+    uart1 = UART(3, 115200)
 
     length = len(send_buffer)
     if length > 20:
