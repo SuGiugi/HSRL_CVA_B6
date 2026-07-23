@@ -42,8 +42,7 @@ Chương trình điều khiển robot tự hành sử dụng **Matrix Mini R4**,
                └── src/
                    └── module/
                        └── sensor/
-
-```
+   ```
 
 3. Nếu hệ thống hiển thị thông báo ghi đè tệp, chọn **Replace** để thay thế tệp hiện có.
 
