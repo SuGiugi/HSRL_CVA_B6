@@ -23,7 +23,7 @@ Tải và cài đặt **Arduino IDE** theo hướng dẫn.
 
 Để biết chi tiết cách cài đặt và sử dụng thư viện MATRIX Mini R4, tham khảo tài liệu:
 
-> https://username.github.io/repository
+> https://matrix-robotics.github.io/Programming-API-Docs/#
 
 Mở tài liệu **MATRIX_R4_Guidebook_EN_V3.0.pdf**, sau đó đến **Mục 2.11.2 – Arduino Programming & Library Overview (Trang 45)** và thực hiện theo hướng dẫn.
 
